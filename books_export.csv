@@ -1,0 +1,5 @@
+title,author,price,publishesAt,createdAt,updatedAt
+Spring Boot in Action,Craig Walls,550,2023-01-10,2026-02-01T10:15:30,2026-02-01T10:15:30
+Effective Java,Joshua Bloch,750,2022-06-15,2026-02-02T11:20,2026-02-02T11:20
+Java Persistence with Hibernate,Christian Bauer,650,2021-09-05,2026-02-03T09:45:10,2026-02-03T09:45:10
+Microservices with Spring Cloud,Prabath Siriwardena,700,2024-03-18,2026-02-04T14:30:25,2026-02-04T14:30:25
