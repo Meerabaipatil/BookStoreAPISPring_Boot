@@ -20,10 +20,20 @@ public interface BookService {
 
 	ResponseEntity<ResponseStructure<BookDTO>> update(BookDTO dto, int id);
 
-	ResponseEntity<ResponseStructure<List<BookDTO>>> findAll(Pageable pageable,
-			Integer id,
-            String title,
-            String author,
-            Integer price,
-            LocalDate publishesAt);
+	ResponseEntity<ResponseStructure<List<BookDTO>>> findAll(Pageable pageable, Integer id, String title, String author,
+			Integer price, LocalDate publishesAt);
+
+	ResponseEntity<ResponseStructure<BookDTO>> borrowBook(int bookId, Long userId);
+
+	ResponseEntity<ResponseStructure<BookDTO>> removeUserFromBook(int bookId);
+	
+	ResponseEntity<ResponseStructure<List<BookDTO>>> getAvailableBooks();
+
+    ResponseEntity<ResponseStructure<List<BookDTO>>> getBorrowedBooks();
+
+    ResponseEntity<ResponseStructure<List<BookDTO>>> getBooksByUser(Long userId);
+
+    ResponseEntity<ResponseStructure<List<BookDTO>>> getBooksByPriceRange(int min, int max);
+
+    ResponseEntity<ResponseStructure<List<BookDTO>>> searchBooksByTitle(String title);
 }

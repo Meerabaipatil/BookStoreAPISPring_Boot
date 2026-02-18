@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.demo.Entity.Book;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.Nullable;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;

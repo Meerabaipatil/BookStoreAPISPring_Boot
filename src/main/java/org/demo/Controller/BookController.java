@@ -9,6 +9,7 @@ import org.demo.responseStructure.ResponseStructure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,7 +29,7 @@ import lombok.Data;
 @Data
 @RequestMapping("/book")
 
-public class Controller {
+public class BookController {
 
 	@Autowired
 	private BookServiceImpl impl;
@@ -36,10 +37,18 @@ public class Controller {
 	// -----------------Save Book-------------//
 	@PostMapping("/save")
 	public ResponseEntity<ResponseStructure<BookDTO>> save(@RequestBody @Valid BookDTO dto,
-			BindingResult bindingResult) {
+	                                                       BindingResult bindingResult) {
+	    if(bindingResult.hasErrors()) {
+	        ResponseStructure<BookDTO> rs = new ResponseStructure<>();
+	        rs.setStatusCode(HttpStatus.BAD_REQUEST.value());
+	        rs.setMessage(bindingResult.getFieldError().getDefaultMessage());
+	        rs.setData(null);
+	        return new ResponseEntity<>(rs, HttpStatus.BAD_REQUEST);
+	    }
 
-		return impl.save(dto);
+	    return impl.save(dto);
 	}
+
 
 	// -------------------Find Book byID-------//
 	@GetMapping("/{id}")
@@ -80,4 +89,40 @@ public class Controller {
 
 		return impl.findAll(PageRequest.of(pageNo - 1, pageSize, sort), id, title, author, price, publishesAt);
 	}
+	
+	
+	@GetMapping("/available")
+	public ResponseEntity<ResponseStructure<List<BookDTO>>> availableBooks() {
+	    return impl.getAvailableBooks();
+	}
+
+	@GetMapping("/borrowed")
+	public ResponseEntity<ResponseStructure<List<BookDTO>>> borrowedBooks() {
+	    return impl.getBorrowedBooks();
+	}
+
+	@GetMapping("/user/{id}")
+	public ResponseEntity<ResponseStructure<List<BookDTO>>> booksByUser(@PathVariable Long id) {
+	    return impl.getBooksByUser(id);
+	}
+
+	@GetMapping("/price")
+	public ResponseEntity<ResponseStructure<List<BookDTO>>> booksByPrice(
+	        @RequestParam int min,
+	        @RequestParam int max) {
+	    return impl.getBooksByPriceRange(min, max);
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<ResponseStructure<List<BookDTO>>> searchBooks(@RequestParam String title) {
+	    return impl.searchBooksByTitle(title);
+	}
+	
+	@GetMapping("/external")
+	public ResponseEntity<String> callExternalApi() {
+	    String data = impl.callExternalApi();
+	    return ResponseEntity.ok(data);
+	}
+
+
 }

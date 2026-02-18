@@ -4,11 +4,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
-import org.demo.Dao.Dao;
+import org.demo.Dao.BookDao;
 import org.demo.Entity.Book;
 import org.demo.ExceptionHandling.BookIdNotFoundException;
 import org.demo.ModelMapper.ModelMapper;
+import org.demo.Repository.UserRepository;
 import org.demo.responseStructure.ResponseStructure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,145 +19,235 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-
-import lombok.Data;
+import org.springframework.web.client.RestTemplate;
 
 @Component
-@Data
 public class BookServiceImpl implements BookService {
 
-	@Autowired
-	private ModelMapper mapper;
+    @Autowired
+    private ModelMapper mapper;
 
-	@Autowired
-	private Dao dao;
-	
-	private static final Logger log = LoggerFactory.getLogger(BookServiceImpl.class);
+    @Autowired
+    private BookDao dao;
+
+    @Autowired
+    private UserRepository userRepo;
+    
+    @Autowired
+    private RestTemplate restTemplate;
 
 
-	@Override
-	public ResponseEntity<ResponseStructure<BookDTO>> save(BookDTO dto) {
-		log.info("Saving Book", dto);
-		Book book = mapper.converIntoEntity(dto);
-		if (book != null) {
-			Book save = dao.save(book);
-			log.info("Book saved with id : "  , save.getId());
-			BookDTO convertIntoDTO = mapper.convertIntoDTO(save);
-			ResponseStructure<BookDTO> structure = new ResponseStructure<>();
-			structure.setStatusCode(HttpStatus.OK.value());
-			structure.setMessage("Book Object saved");
-			structure.setData(convertIntoDTO);
+    private static final Logger log = LoggerFactory.getLogger(BookServiceImpl.class);
 
-			return new ResponseEntity<ResponseStructure<BookDTO>>(structure, HttpStatus.OK);
+    // ================= SAVE =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> save(BookDTO dto) {
 
-		} else {
-			log.error("Book data is invalid: {} ", dto);
-			ResponseStructure<BookDTO> structure = new ResponseStructure<>();
-			structure.setStatusCode(HttpStatus.BAD_REQUEST.value());
-			structure.setMessage("Book data is invalid, cannot save");
-			structure.setData(null);
+        Book book;
 
-			return new ResponseEntity<>(structure, HttpStatus.BAD_REQUEST);
+        if (dto.getUserId() != null) {
+            Optional<User> userOpt = userRepo.findById(dto.getUserId());
+            if (userOpt.isEmpty()) {
+                return buildError("User not found with id: " + dto.getUserId(), HttpStatus.NOT_FOUND);
+            }
+            book = mapper.convertIntoEntity(dto, userOpt.get());
+        } else {
+            book = mapper.convertIntoEntity(dto, null);
+        }
 
-		}
+        Book saved = dao.save(book);
+        BookDTO responseDto = mapper.convertIntoDTO(saved);
 
-	}
+        return buildSuccess("Book saved successfully", responseDto);
+    }
 
-	@Override
-	public ResponseEntity<ResponseStructure<BookDTO>> findById(int id) {
-		log.info("Finding book with id: {}", id);
-		Optional<Book> byId = dao.findById(id);
-		if (byId.isPresent()) {
-			Book book = byId.get();
-			log.info("Book found with id: {}", id);
-			BookDTO convertIntoDTO = mapper.convertIntoDTO(book);
-			ResponseStructure<BookDTO> structure = new ResponseStructure<>();
-			structure.setStatusCode(HttpStatus.OK.value());
-			structure.setMessage("Product Object Found");
-			structure.setData(convertIntoDTO);
-			return new ResponseEntity<ResponseStructure<BookDTO>>(structure, HttpStatus.OK);
-		} else {
-			log.warn("Book not found with id: {}", id);
-			throw new BookIdNotFoundException("Book not found with id: " + id);
-		}
+    // ================= FIND BY ID =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> findById(int id) {
+        Optional<Book> opt = dao.findById(id);
 
-	}
+        if (opt.isEmpty()) {
+            throw new BookIdNotFoundException("Book not found with id: " + id);
+        }
 
-	@Override
-	public ResponseEntity<ResponseStructure<BookDTO>> deleteById(int id) {
-		 log.info("Deleting book with id: {}", id);
-		Optional<Book> byId = dao.findById(id);
-		if (byId.isPresent()) {
-			Book book = byId.get();
-			dao.deleteById(id);
-			log.info("Book deleted with id: {}", id);
-			BookDTO convertIntoDTO = mapper.convertIntoDTO(book);
-			ResponseStructure<BookDTO> structure = new ResponseStructure<>();
-			structure.setStatusCode(HttpStatus.OK.value());
-			structure.setMessage("Book with id " + id + " deleted Successfully");
-			structure.setData(convertIntoDTO);
+        BookDTO dto = mapper.convertIntoDTO(opt.get());
+        return buildSuccess("Book found", dto);
+    }
 
-			return new ResponseEntity<ResponseStructure<BookDTO>>(structure, HttpStatus.OK);
+    // ================= DELETE =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> deleteById(int id) {
+        Optional<Book> opt = dao.findById(id);
 
-		} else {
-			log.warn(" book not found with id: {}", id);
-			throw new BookIdNotFoundException("Product not found with id: " + id);
-		}
+        if (opt.isEmpty()) {
+            throw new BookIdNotFoundException("Book not found with id: " + id);
+        }
 
-	}
+        Book book = opt.get();
+        dao.deleteById(id);
 
-	@Override
-	public ResponseEntity<ResponseStructure<BookDTO>> update(BookDTO dto, int id) {
-		 log.info("Finding book with id: {}", id);
-		Optional<Book> byId = dao.findById(id);
-		if (byId.isPresent()) {
-			Book book = byId.get();
+        BookDTO dto = mapper.convertIntoDTO(book);
+        return buildSuccess("Book deleted", dto);
+    }
 
-			if (book.getCreatedAt() != null && book.getUpdatedAt() != null) {
-				if (book.getUpdatedAt().isBefore(book.getCreatedAt())) {
-					log.error("Updated time is there before created time for book id: {}", id);
-					throw new RuntimeException("Updated time cannot be before created time");
+    // ================= UPDATE =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> update(BookDTO dto, int id) {
+        Optional<Book> opt = dao.findById(id);
 
-				}
-			}
-			book.setTitle(dto.getTitle());
-			book.setPrice(dto.getPrice());
-			book.setAuthor(dto.getAuthor());
-			book.setPublishesAt(dto.getPublishesAt());
+        if (opt.isEmpty()) {
+            throw new BookIdNotFoundException("Book not found with id: " + id);
+        }
 
-			Book update = dao.update(book);
-			log.info("Book updated successfully with id: {}", update.getId());
-			BookDTO convertIntoDTO = mapper.convertIntoDTO(update);
-			ResponseStructure<BookDTO> structure = new ResponseStructure<>();
-			structure.setStatusCode(HttpStatus.OK.value());
-			structure.setMessage("Book with id " + id + " Updated  Successfully");
-			structure.setData(convertIntoDTO);
+        Book book = opt.get();
+        book.setTitle(dto.getTitle());
+        book.setAuthor(dto.getAuthor());
+        book.setPrice(dto.getPrice());
+        book.setPublishesAt(dto.getPublishesAt());
 
-			return new ResponseEntity<ResponseStructure<BookDTO>>(structure, HttpStatus.OK);
-		} else {
-			 log.warn("Update failed. Book not found with id: {}", id);
-			throw new BookIdNotFoundException("Product not found with id: " + id);
+        if (dto.getUserId() != null) {
+            Optional<User> userOpt = userRepo.findById(dto.getUserId());
+            if (userOpt.isEmpty()) {
+                return buildError("User not found with id: " + dto.getUserId(), HttpStatus.NOT_FOUND);
+            }
+            book.setUser(userOpt.get());
+        }
 
-		}
-	}
+        Book updated = dao.update(book);
+        BookDTO responseDto = mapper.convertIntoDTO(updated);
 
-	@Override
-	public ResponseEntity<ResponseStructure<List<BookDTO>>> findAll(Pageable pageable, Integer id, String title,
-			String author, Integer price, LocalDate publishesAt) {
-		log.info("Fetching all books with filters -> id: {}, title: {}, author: {}, price: {}, publishesAt: {}",
-	            id, title, author, price, publishesAt);
-		List<Book> all = dao.findAll(pageable, id, title, author, price, publishesAt).getContent();
-		log.info("Total books fetched: {}", all.size());
+        return buildSuccess("Book updated successfully", responseDto);
+    }
 
-		List<BookDTO> list = all.stream().map(book -> mapper.convertIntoDTO(book)).toList();
+    // ================= FIND ALL =================
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> findAll(Pageable pageable, Integer id, String title,
+            String author, Integer price, LocalDate publishesAt) {
 
-		// Build response
-		ResponseStructure<List<BookDTO>> structure = new ResponseStructure<>();
-		structure.setStatusCode(HttpStatus.OK.value());
-		structure.setMessage("List Of Books:");
-		structure.setData(list);
+        List<Book> books = dao.findAll(pageable, id, title, author, price, publishesAt).getContent();
 
-		return new ResponseEntity<>(structure, HttpStatus.OK);
-	}
+        List<BookDTO> list = books.stream()
+                .map(b -> mapper.convertIntoDTO(b))
+                .toList();
+
+        ResponseStructure<List<BookDTO>> rs = new ResponseStructure<>();
+        rs.setStatusCode(HttpStatus.OK.value());
+        rs.setMessage("All books fetched");
+        rs.setData(list);
+
+        return ResponseEntity.ok(rs);
+    }
+
+    // ================= BORROW BOOK =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> borrowBook(int bookId, Long userId) {
+        Optional<Book> bookOpt = dao.findById(bookId);
+        Optional<User> userOpt = userRepo.findById(userId);
+
+        if (bookOpt.isEmpty())
+            throw new BookIdNotFoundException("Book not found with id: " + bookId);
+
+        if (userOpt.isEmpty())
+            return buildError("User not found with id: " + userId, HttpStatus.NOT_FOUND);
+
+        Book book = bookOpt.get();
+
+        if (book.getUser() != null) {
+            return buildError("Book already borrowed", HttpStatus.BAD_REQUEST);
+        }
+
+        book.setUser(userOpt.get());
+        Book updated = dao.update(book);
+
+        return buildSuccess("Book borrowed successfully", mapper.convertIntoDTO(updated));
+    }
+
+    // ================= REMOVE USER FROM BOOK =================
+    @Override
+    public ResponseEntity<ResponseStructure<BookDTO>> removeUserFromBook(int bookId) {
+        Optional<Book> bookOpt = dao.findById(bookId);
+
+        if (bookOpt.isEmpty())
+            throw new BookIdNotFoundException("Book not found with id: " + bookId);
+
+        Book book = bookOpt.get();
+        book.setUser(null);
+
+        Book updated = dao.update(book);
+        return buildSuccess("User removed from book", mapper.convertIntoDTO(updated));
+    }
+
+   
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> getAvailableBooks() {
+        List<Book> books = dao.findAvailableBooks();
+        return buildList("Available books fetched", books);
+    }
+
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> getBorrowedBooks() {
+        List<Book> books = dao.findBorrowedBooks();
+        return buildList("Borrowed books fetched", books);
+    }
+
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> getBooksByUser(Long userId) {
+        List<Book> books = dao.findBooksByUser(userId);
+        return buildList("Books fetched for user " + userId, books);
+    }
+
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> getBooksByPriceRange(int min, int max) {
+        List<Book> books = dao.findByPriceRange(min, max);
+        return buildList("Books fetched in price range", books);
+    }
+
+    @Override
+    public ResponseEntity<ResponseStructure<List<BookDTO>>> searchBooksByTitle(String title) {
+        List<Book> books = dao.searchByTitle(title);
+        return buildList("Books fetched by title", books);
+    }
+
+   
+    private ResponseEntity<ResponseStructure<BookDTO>> buildSuccess(String msg, BookDTO dto) {
+        ResponseStructure<BookDTO> rs = new ResponseStructure<>();
+        rs.setStatusCode(HttpStatus.OK.value());
+        rs.setMessage(msg);
+        rs.setData(dto);
+        return ResponseEntity.ok(rs);
+    }
+
+    private ResponseEntity<ResponseStructure<BookDTO>> buildError(String msg, HttpStatus status) {
+        ResponseStructure<BookDTO> rs = new ResponseStructure<>();
+        rs.setStatusCode(status.value());
+        rs.setMessage(msg);
+        rs.setData(null);
+        return ResponseEntity.status(status).body(rs);
+    }
+
+    private ResponseEntity<ResponseStructure<List<BookDTO>>> buildList(String msg, List<Book> books) {
+        List<BookDTO> list = books.stream()
+                .map(b -> mapper.convertIntoDTO(b))
+                .toList();
+
+        ResponseStructure<List<BookDTO>> rs = new ResponseStructure<>();
+        rs.setStatusCode(HttpStatus.OK.value());
+        rs.setMessage(msg);
+        rs.setData(list);
+
+        return ResponseEntity.ok(rs);
+    }
+    
+    
+    //--------------calling dummy api -----------//
+    public String callExternalApi() {
+
+        String url = "https://jsonplaceholder.typicode.com/posts/1";
+
+        ResponseEntity<String> response =
+                restTemplate.getForEntity(url, String.class);
+
+        return response.getBody();
+    }
 
 }

@@ -14,6 +14,9 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandling {
+	
+	
+
 
 	@ExceptionHandler(BookIdNotFoundException.class)
 	public ResponseEntity<ResponseStructure<String>> handleProductIdNotFound(BookIdNotFoundException e) {
@@ -32,7 +35,6 @@ public class GlobalExceptionHandling {
 			ConstraintViolationException e) {
 
 		Map<String, String> errors = new HashMap<>();
-
 		for (ConstraintViolation violation : e.getConstraintViolations()) {
 			String field = violation.getPropertyPath().toString();
 			String message = violation.getMessage();
@@ -43,8 +45,16 @@ public class GlobalExceptionHandling {
 		structure.setStatusCode(HttpStatus.BAD_REQUEST.value());
 		structure.setMessage("Validation Failed");
 		structure.setData(errors);
-
 		return new ResponseEntity<>(structure, HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(UserAlreadyExistsException.class)
+	public ResponseEntity<ResponseStructure<String>> handleUserExists(UserAlreadyExistsException ex) {
+		ResponseStructure<String> structure = new ResponseStructure<>();
+		structure.setStatusCode(HttpStatus.ALREADY_REPORTED.value());
+		structure.setMessage(ex.getMsg());
+		structure.setData(null);
+		return new ResponseEntity<>(structure, HttpStatus.ALREADY_REPORTED);
 	}
 
 }

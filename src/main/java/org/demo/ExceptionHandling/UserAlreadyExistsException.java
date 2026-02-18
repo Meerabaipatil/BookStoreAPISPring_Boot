@@ -1,5 +1,6 @@
 package org.demo.ExceptionHandling;
 
+import org.hibernate.annotations.Comment;
 import org.springframework.stereotype.Component;
 
 import lombok.AllArgsConstructor;
@@ -7,8 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
+public class UserAlreadyExistsException extends RuntimeException {
 
-public class BookIdNotFoundException extends RuntimeException {
 	
 	private String msg;
 
@@ -20,11 +21,11 @@ public class BookIdNotFoundException extends RuntimeException {
 		this.msg = msg;
 	}
 
-	public BookIdNotFoundException(String msg) {
+	public UserAlreadyExistsException(String msg) {
 		super();
 		this.msg = msg;
 	}
 	
 	
-
+	
 }
