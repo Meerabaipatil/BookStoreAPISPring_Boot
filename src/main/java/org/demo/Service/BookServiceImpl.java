@@ -4,10 +4,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
 import org.demo.Dao.BookDao;
 import org.demo.Entity.Book;
+import org.demo.Entity.User;
 import org.demo.ExceptionHandling.BookIdNotFoundException;
 import org.demo.ModelMapper.ModelMapper;
 import org.demo.Repository.UserRepository;

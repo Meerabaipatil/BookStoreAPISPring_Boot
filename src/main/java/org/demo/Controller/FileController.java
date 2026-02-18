@@ -1,7 +1,9 @@
-package org.demo.FileHandling;
+package org.demo.Controller;
 
 import java.util.List;
 
+import org.demo.Entity.BookFile;
+import org.demo.Service.FileServiceImpl;
 import org.demo.responseStructure.ResponseStructure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

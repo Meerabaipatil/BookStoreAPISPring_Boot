@@ -1,9 +1,9 @@
-package org.demo;
+package org.demo.Controller;
 
 import java.util.List;
 
-import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
+import org.demo.Entity.User;
 import org.demo.Service.UserService;
 import org.demo.responseStructure.ResponseStructure;
 import org.springframework.beans.factory.annotation.Autowired;

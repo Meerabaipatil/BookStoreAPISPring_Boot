@@ -14,8 +14,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
+import org.demo.Entity.User;
 import org.demo.Repository.UserRepository;
 import org.demo.Service.BookServiceImpl;
 import org.demo.Service.EmailService;

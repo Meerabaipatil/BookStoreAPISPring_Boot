@@ -1,8 +1,8 @@
 package org.demo.ModelMapper;
 
-import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
 import org.demo.Entity.Book;
+import org.demo.Entity.User;
 import org.springframework.stereotype.Component;
 
 @Component

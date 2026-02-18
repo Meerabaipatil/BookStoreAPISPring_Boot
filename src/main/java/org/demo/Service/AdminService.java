@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-import org.demo.Controller.User;
 import org.demo.DTO.BookDTO;
 import org.demo.Entity.Admin;
+import org.demo.Entity.User;
 import org.demo.Repository.AdminRepository;
 import org.demo.Repository.UserRepository;
 import org.demo.SpringSecurity.JwtUtil;

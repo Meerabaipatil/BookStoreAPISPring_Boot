@@ -1,8 +1,6 @@
-package org.demo.Controller;
+package org.demo.Entity;
 
 import java.util.List;
-
-import org.demo.Entity.Book;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.demo.DTO.BookDTO;
 import org.demo.Entity.Admin;
+import org.demo.Entity.User;
 import org.demo.responseStructure.ResponseStructure;
 import org.demo.Service.AdminService;
 import org.demo.Service.BookServiceImpl;
